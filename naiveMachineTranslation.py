@@ -1,0 +1,202 @@
+# Naive machine translation and LSH with NLP
+# By: Qidu (Quentin) Fu
+# Note: This is based on the assignment 4 of the coursera
+# NLP specialization's week 4 assignment
+
+# Import the necessary libraries ------------------------------------------------
+# -------------------------------------------------------------------------------
+import numpy as np
+import pickle
+import nltk
+from nltk.corpus import stopwords, twitter_samples
+from utils import cosine_similarity, get_dict, process_tweet
+
+# Import the data --------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+en_embeddings_subset = pickle.load(open("./data/en_embeddings.p", "rb"))
+fr_embeddings_subset = pickle.load(open("./data/fr_embeddings.p", "rb"))
+
+# loading the english to french dictionaries
+en_fr_train = get_dict("./data/en-fr.train.txt")
+print("The length of the English to French training dictionary is", len(en_fr_train))
+en_fr_test = get_dict("./data/en-fr.test.txt")
+print("The length of the English to French test dictionary is", len(en_fr_test))
+
+
+# generate embedding for the words in the dictionaries and transform matrices
+def get_matrices(en_fr, french_vecs, english_vecs):
+    """
+    Input:
+        en_fr: English to French dictionary
+        french_vecs: French words to their corresponding word embeddings.
+        english_vecs: English words to their corresponding word embeddings.
+    Output:
+        X: a matrix where the columns are the English embeddings.
+        Y: a matrix where the columns correspong to the French embeddings.
+        R: the projection matrix that minimizes the F norm ||X R -Y||^2.
+    """
+
+    # X_l and Y_l are lists of the english and french word embeddings
+    X_l = list()
+    Y_l = list()
+
+    # get the english words (the keys in the dictionary) and store in a set()
+    english_set = set(english_vecs.keys())
+    # get the french words (keys in the dictionary) and store in a set()
+    french_set = set(french_vecs.keys())
+
+    # store the french words that are part of the english-french dictionary (these are the values of the dictionary)
+    french_words = set(en_fr.values())
+    # loop through all english, french word pairs in the english french dictionary
+    for en_word, fr_word in en_fr.items():
+        # check that the french word has an embedding and that the english word has an embedding
+        if fr_word in french_set and en_word in english_set:
+            # get the english embedding
+            en_vec = english_vecs[en_word]
+            # get the french embedding
+            fr_vec = french_vecs[fr_word]
+            # add the english embedding to the list
+            X_l.append(en_vec)
+            # add the french embedding to the list
+            Y_l.append(fr_vec)
+    # stack the vectors of X_l into a matrix X
+    X = np.array(X_l)  # np.vstack(X_l)
+    # stack the vectors of Y_l into a matrix Y
+    Y = np.array(Y_l)  # np.vstack(Y_l)
+
+    return X, Y
+
+
+# Make translations -------------------------------------------------------------
+# ------------------------------------------------------------------------------
+def compute_loss(X, Y, R):
+    """
+    Input:
+        X: a matrix of dimension (m,n) where m is the number of English words, and n is the length of the embedding vector.
+        Y: a matrix of dimension (m,n) where m is the number of French words, and n is the length of the embedding vector.
+        R: a matrix of dimension (n,n) - transformation matrix that translates word embeddings from one language to another.
+    Output:
+        L: a matrix of dimension (m,n) - where m is the number of English words, and n is the length of the embedding vector.
+    """
+    m = X.shape[0]
+    diff = np.dot(X, R) - Y
+    diff_squared = np.square(diff)
+    sum_diff_squared = np.sum(diff_squared)
+    loss = sum_diff_squared / m
+
+    return loss
+
+
+# compute gradient
+def compute_gradient(X, Y, R):
+    """
+    Input:
+        X: a matrix of dimension (m,n) where m is the number of English words, and n is the length of the embedding vector.
+        Y: a matrix of dimension (m,n) where m is the number of French words, and n is the length of the embedding vector.
+        R: a matrix of dimension (n,n) - transformation matrix that translates word embeddings from one language to another.
+    Output:
+        g: a scalar value - gradient of the loss function L for given X, Y and R.
+    """
+    m = X.shape[0]
+    gradient = 2 / m * np.dot(X.T, np.dot(X, R) - Y)
+
+    return gradient
+
+
+# compute gradient descent
+def align_embeddings(
+    X,
+    Y,
+    train_steps=100,
+    learning_rate=0.0003,
+    verbose=True,
+    compute_loss=compute_loss,
+    compute_gradient=compute_gradient,
+):
+    """
+    Inputs:
+        X: a matrix of dimension (m,n) where the columns are the English embeddings.
+        Y: a matrix of dimension (m,n) where the columns correspong to the French embeddings.
+        train_steps: positive int - describes how many steps will gradient descent algorithm do.
+        learning_rate: positive float - describes how big steps will  gradient descent algorithm do.
+    Outputs:
+        R: a matrix of dimension (n,n) - the projection matrix that minimizes the F norm ||X R -Y||^2
+    """
+    np.random.seed(129)
+
+    # the number of columns in X is the number of dimensions for a word vector (e.g. 300)
+    # R is a square matrix with length equal to the number of dimensions in th  word embedding
+    R = np.random.rand(X.shape[1], X.shape[1])
+
+    for i in range(train_steps):
+        if verbose and i % 25 == 0:
+            print(f"loss at iteration {i} is: {compute_loss(X, Y, R):.4f}")
+        ### START CODE HERE ###
+        # use the function that you defined to compute the gradient
+        gradient = compute_gradient(X, Y, R)
+
+        # update R by subtracting the learning rate times gradient
+        R -= learning_rate * gradient
+    return R
+
+
+# Test the translation ---------------------------------------------------------
+# ------------------------------------------------------------------------------
+def nearest_neighbor(v, candidates, k=1, cosine_similarity=cosine_similarity):
+    """
+    Input:
+      - v, the vector you are going find the nearest neighbor for
+      - candidates: a set of vectors where we will find the neighbors
+      - k: top k nearest neighbors to find
+    Output:
+      - k_idx: the indices of the top k closest vectors in sorted form
+    """
+    ### START CODE HERE ###
+    similarity_l = []
+
+    # for each candidate vector...
+    for row in candidates:
+        # get the cosine similarity
+        cos_similarity = cosine_similarity(v, row)
+        # append the similarity to the list
+        similarity_l.append(cos_similarity)
+
+    # sort the similarity list and get the indices of the sorted list
+    sorted_ids = np.argsort(similarity_l)
+    # Reverse the order of the sorted_ids array
+    sorted_ids = sorted_ids[::-1]
+    # get the indices of the k most similar candidate vectors
+    k_idx = sorted_ids[:k]
+    return k_idx
+
+
+def test_vocabulary(X, Y, R, nearest_neighbor=nearest_neighbor):
+    """
+    Input:
+        X: a matrix where the columns are the English embeddings.
+        Y: a matrix where the columns correspong to the French embeddings.
+        R: the transform matrix which translates word embeddings from
+        English to French word vector space.
+    Output:
+        accuracy: for the English to French capitals
+    """
+
+    # The prediction is X times R
+    pred = np.matmul(X, R)
+    # initialize the number correct to zero
+    num_correct = 0
+
+    # loop through each row in pred (each transformed embedding)
+    for i in range(len(pred)):
+        # get the index of the nearest neighbor of pred at row 'i'; also pass in the candidates in Y
+        pred_idx = nearest_neighbor(pred[i, :], Y)
+        # if the index of the nearest neighbor equals the row of i... \
+        if pred_idx == i:
+            # increment the number correct by 1.
+            num_correct += 1
+
+    # accuracy is the number correct divided by the number of rows in 'pred' (also number of rows in X)
+    accuracy = num_correct / len(pred)
+    return accuracy
+
