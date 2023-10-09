@@ -40,7 +40,7 @@ To complete the aforementioned tasks, my project code files:
     - perform machine translation as linear transformation of word embeddings
     - perform model evaluation
 
-Note that the some helper functions are written in the `utils.py` file. Please refer to the code and utils files for more details.
+Note that the some helper functions are written in the [`utils.py`](utils.py) file. Please refer to the code and utils files for more details.
 
 <a name='3'></a>
 ## 3 Acknowledgements
