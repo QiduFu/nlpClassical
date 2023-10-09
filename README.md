@@ -15,7 +15,7 @@ These repository includes two projects, specifically, these two project aim for 
 - project4 (naiveMachineTranslationAndLSH): Implement machine translation from scratch using word embeddings and locality sensitive hashing
 
 <a name='2'></a>
-## 2 Methodology
+## 2 Project Methodology
 To complete the aforementioned tasks, my project code files:
 - Project 1 ([code file](logRegressionForSentimentAnalysis.py)):
     - clean the Twitter data
@@ -30,15 +30,14 @@ To complete the aforementioned tasks, my project code files:
     - predict sentiment polarity of Twitter text data
     - perform model evaluation
 - Project 3 ([code file](wordEmbeddings.py)):
-    - clean the Twitter data
-    - extract features from the data
-    - implement word2vec from scratch
     - predict analogies between words
+    - use pca to reduce the dimensionality of the word embeddings and plot them in two dimensions
+    - compare word embeddings by using a similarity measure (cosine similarity)
+    - understand how these vector space models work
     - perform model evaluation
 - Project 4 ([code file](naiveMachineTranslation.py)):
-    - clean the Twitter data
-    - extract features from the data
-    - implement machine translation from scratch using word embeddings 
+    - generate word embeddings and transform matrices
+    - perform machine translation as linear transformation of word embeddings
     - perform model evaluation
 
 Note that the some helper functions are written in the `utils.py` file. Please refer to the code and utils files for more details.
