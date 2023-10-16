@@ -8,7 +8,7 @@ By Qidu(Quentin) Fu
 
 <a name='1'></a>
 ## 1 Introduction 
-These repository includes two projects, specifically, these two project aim for the tasks below respectively:
+This repository includes two projects, specifically, these two project aim for the tasks below respectively:
 - project1 (logRegressionForSentimentAnalysis): Implement logistic regression from scratch to predict sentiment polarity of Twitter text data
 - project2 (naiveBayesForSentimentAnalysis): Implement naive Bayes from scratch to predict sentiment polarity of Twitter text data
 - project3 (wordEmbeddings): Implement word2vec from scratch to predict analogies between words
