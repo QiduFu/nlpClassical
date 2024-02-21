@@ -1,5 +1,5 @@
 # Classical NLP Models 
-By Qidu(Quentin) Fu
+By Qidu Fu
 
 ## Outline
 - [1 Introduction](#1)
